@@ -10,6 +10,7 @@ Ce document couvre le déploiement de la plateforme en production.
 │  - Next.js 15                           │
 │  - PostgreSQL connection pool           │
 │  - Environment variables                │
+│  - Exclut: engine/, windows_agent/     │
 └──────────────┬──────────────────────────┘
                │ HTTPS
 ┌──────────────▼──────────────────────────┐
@@ -25,8 +26,23 @@ Ce document couvre le déploiement de la plateforme en production.
 │  - MT5 Terminal                        │
 │  - Python Engine Service               │
 │  - Windows Agent                       │
+│  - Déployé depuis engine/ séparément   │
 └─────────────────────────────────────────┘
 ```
+
+## 📦 Organisation du déploiement
+
+Le repository est divisé en deux parties déployées séparément:
+
+1. **Vercel** - Frontend + Backend Next.js
+   - Racine du repository (exclut `engine/` et `windows_agent/`)
+   - Configuration: `vercel.json`
+   - Exclusions: `.vercelignore`
+
+2. **Contabo** - Moteur Python + Windows Agent
+   - Dossier `engine/` et `windows_agent/`
+   - Déployé manuellement sur VPS Windows
+   - Service Windows indépendant
 
 ## 📦 Prérequis
 
@@ -179,30 +195,30 @@ curl https://votre-domaine.com/api/v1/health
 
 Connectez-vous via RDP:
 
-1. **Installer Node.js**
-   - Téléchargez depuis [nodejs.org](https://nodejs.org)
-   - Installez la version LTS (18+)
-
-2. **Installer Python 3.10+**
+1. **Installer Python 3.10+**
    - Téléchargez depuis [python.org](https://python.org)
    - Cochez "Add Python to PATH"
 
-3. **Installer MetaTrader 5**
+2. **Installer MetaTrader 5**
    - Téléchargez depuis votre broker
    - Installez dans un chemin sans espaces (ex: `C:\MT5`)
 
-4. **Cloner le moteur**
+3. **Copier le moteur depuis le repository**
+   - **Important**: Copiez uniquement les dossiers `engine/` et `windows_agent/` du repository
+   - N'installez PAS Node.js sur le VPS (non nécessaire pour le moteur)
    ```powershell
-   cd C:\
-   git clone <repository-url> mt5-engine
-   cd mt5-engine\engine
+   # Depuis votre machine locale, copiez via RDP ou SCP:
+   # - engine/ -> C:\mt5-engine\engine
+   # - windows_agent/ -> C:\mt5-windows-agent
    ```
 
-5. **Installer les dépendances Python**
+4. **Installer les dépendances Python**
    ```powershell
+   cd C:\mt5-engine\engine
    python -m venv .venv
    .venv\Scripts\activate
    pip install -r requirements.txt
+   # requirements.txt doit être créé depuis pyproject.toml
    ```
 
 ### 3.3 Configurer le moteur

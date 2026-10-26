@@ -197,24 +197,56 @@ Le moteur Python communique avec le backend via HTTPS:
 
 ## 🚢 Déploiement
 
-### Frontend (Vercel)
+L'application est divisée en deux parties à déployer séparément:
+
+### Frontend + Backend (Vercel)
+
+Le repository est configuré pour Vercel avec:
+- `vercel.json` - Configuration du build
+- `.vercelignore` - Exclut le moteur Python et les tests
+
+**Étapes:**
 
 1. Connecter le repository à Vercel
-2. Configurer les variables d'environnement
-3. Déployer automatiquement sur push vers main
+2. Configurer les variables d'environnement dans les settings Vercel
+3. Le déploiement est automatique sur chaque push vers `main`
+
+**Variables Vercel requises:**
+- `DATABASE_URL` - Connection Neon poolée
+- `DATABASE_URL_DIRECT` - Connection Neon directe (pour migrations)
+- `AUTH_SECRET` - Secret sessions
+- `ENCRYPTION_KEY_RING` - Clés AES-256
+- `ENGINE_AUTH_SECRET` - Secret partagé avec le moteur
+- Et autres variables (voir `.env.example`)
 
 ### Base de données (Neon)
 
 1. Créer un projet Neon
 2. Configurer `DATABASE_URL` et `DATABASE_URL_DIRECT`
-3. Lancer les migrations: `npm run db:migrate`
+3. Lancer les migrations depuis votre machine locale:
+```bash
+npm run db:migrate
+```
+4. Seeder la base (crée l'admin):
+```bash
+npm run db:seed
+```
 
-### Moteur (Contabo)
+### Moteur Python (Contabo)
+
+Le moteur Python est dans le dossier `engine/` et doit être déployé séparément sur un VPS Windows.
+
+**Note:** Le dossier `engine/` est exclu du déploiement Vercel via `.vercelignore`.
+
+**Étapes:**
 
 1. Déployer sur un VPS Windows (nécessaire pour MT5)
-2. Configurer `ENGINE_AUTH_SECRET` identique au backend
-3. Démarrer le service Windows Agent
-4. Installer Python et les dépendances du moteur
+2. Copier uniquement le dossier `engine/` et `windows_agent/`
+3. Configurer `ENGINE_AUTH_SECRET` identique à Vercel
+4. Démarrer le service Windows Agent
+5. Installer Python et les dépendances du moteur
+
+Pour les instructions détaillées, voir [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## 📝 Conventions de code
 

@@ -1,0 +1,38 @@
+# Moteur Python (déployé séparément sur Contabo)
+engine/
+windows_agent/
+
+# Tests et coverage
+tests/
+coverage/
+.nyc_output/
+
+# Documentation technique (non nécessaire pour le build)
+_extracted_cdc.txt
+AGENTS.md
+DEPLOYMENT.md
+
+# Docker (non utilisé sur Vercel)
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# CI/CD (GitHub uniquement)
+.github/
+
+# Scripts de développement
+scripts/
+
+# Migrations Drizzle (exécutées manuellement en prod)
+drizzle/
+
+# Environment local
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+
+# Misc
+.DS_Store

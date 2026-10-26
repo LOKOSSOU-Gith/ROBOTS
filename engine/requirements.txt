@@ -1,0 +1,10 @@
+# Dépendances du moteur MT5
+# Généré depuis pyproject.toml
+requests>=2.31.0
+
+# MT5 Library (Windows uniquement - installé avec [windows])
+# MetaTrader5>=5.0.45
+
+# Dépendances de développement (optionnel)
+# pytest>=8.0.0
+# pytest-timeout>=2.3.0
