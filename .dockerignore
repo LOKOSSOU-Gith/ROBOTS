@@ -1,0 +1,49 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Next.js
+.next
+out
+build
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+.vscode
+.idea
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+CONTRIBUTING.md
+DEPLOYMENT.md
+AGENTS.md
+_extracted_cdc.txt
+
+# Engine (Python)
+engine
+.venv
+
+# CI/CD
+.github
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml

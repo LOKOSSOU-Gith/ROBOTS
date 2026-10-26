@@ -1,0 +1,330 @@
+
+
+CAHIER DES CHARGES TECHNIQUE
+Plateforme SaaS multi-clients de robots de trading MetaTrader 5
+Version 1.0 — 26 octobre 2026
+Architecture cible : Vercel + backend sécurisé + PostgreSQL/Neon + VPS Contabo + Python/MetaTrader 5
+Décisions : multi-stratégies, multi-symboles, comptes et licences séparés, réel uniquement après validation, Martingale interdit.
+1. Résumé exécutif
+La plateforme permet à l’administrateur et à plusieurs clients de connecter leurs comptes MT5, de choisir une stratégie autorisée, de configurer ses paramètres et de lancer ou arrêter son exécution depuis un navigateur. Les ordres ne sont pas exécutés par Vercel : le moteur Python sur Contabo communique avec un terminal MT5 compatible et le broker.
+Vercel héberge l’interface Next.js et les services web adaptés aux traitements courts.
+Le backend valide l’identité, les permissions, la licence, les paramètres et les commandes.
+PostgreSQL/Neon conserve les données métier ; les mots de passe MT5 ne sont jamais stockés en clair.
+Contabo héberge le moteur Python permanent, le terminal MT5 et les instances de stratégie.
+Aucune garantie de profit. Aucun Martingale. Aucun compte réel avant validation et autorisation explicite.
+2. Objectifs et périmètre
+2.1 Objectifs
+Gérer plusieurs robots et plusieurs symboles.
+Isoler chaque client, ses comptes MT5, ses paramètres, ses licences et ses historiques.
+Démarrer, arrêter et surveiller les robots à distance.
+Tracer les commandes, événements, positions et résultats.
+Ajouter des stratégies sans reconstruire le site.
+2.2 Hors périmètre initial
+Promesse de rentabilité ou rendement garanti.
+Martingale, grille de récupération ou augmentation automatique des lots après perte.
+Gestion des retraits ou des fonds des clients.
+HFT/market-making garanti : faisabilité conditionnée par le broker, la latence et ses règles.
+3. Rôles et permissions
+Rôle
+Droits principaux
+Administrateur
+Gérer utilisateurs, licences, stratégies, limites globales, incidents et journaux.
+Client
+Gérer uniquement ses comptes MT5, licences, paramètres et instances autorisées.
+Service moteur
+Exécuter uniquement les commandes validées pour un compte et une stratégie autorisés.
+Support facultatif
+Voir les états techniques selon des permissions limitées ; pas d’accès aux secrets MT5.
+Toutes les autorisations sont contrôlées côté serveur. Masquer un bouton dans l’interface n’est pas une mesure de sécurité.
+4. Architecture technique
+Composant
+Technologie cible
+Responsabilité
+Frontend
+Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui sur Vercel
+Interface responsive et tableaux de bord.
+Backend
+Next.js Route Handlers ou API dédiée
+Authentification, rôles, licences, validations et commandes.
+Base de données
+PostgreSQL managé, par exemple Neon
+Données relationnelles, contraintes et migrations.
+Moteur d’exécution
+Service Python permanent sur Contabo
+Orchestration, connexions MT5, stratégies et risques.
+Terminal MT5
+Terminal dans un environnement compatible
+Connexion broker, cotations, ordres et confirmations.
+Communication
+HTTPS sortant, authentification de service, commandes idempotentes
+Éviter une API d’administration exposée publiquement.
+Observabilité
+Logs structurés, métriques et alertes
+Suivi des erreurs, disponibilités et états.
+Compatibilité essentielle : la bibliothèque Python MetaTrader5 officielle communique avec un terminal MT5 dans un environnement compatible, généralement Windows. Ne pas supposer qu’elle fonctionne nativement sur n’importe quel VPS Linux. Vérifier l’OS exact de Contabo ; une VM Windows ou un environnement d’exécution Windows séparé peut être nécessaire. Le moteur permanent ne doit pas tourner dans une fonction Vercel.
+5. Parcours utilisateur
+L’utilisateur se connecte au site.
+Il ajoute le broker, le serveur MT5 exact, le numéro de compte et le secret de trading.
+Le backend protège le secret et le transmet au moteur par un canal authentifié ; le mot de passe n’est jamais affiché.
+L’utilisateur choisit une stratégie, une version et un ou plusieurs symboles autorisés.
+Il configure les paramètres dans les limites définies.
+La stratégie est testée en démo ou simulation ; le mode est clairement indiqué.
+Après validation et autorisation explicite, le mode réel peut être activé pour ce compte.
+Le moteur confirme l’état effectif et publie les événements.
+L’utilisateur peut arrêter les nouvelles entrées, arrêter la stratégie ou lancer une liquidation d’urgence distincte.
+6. Catalogue multi-stratégies
+Chaque stratégie a un identifiant stable, une version, des symboles compatibles et un schéma de paramètres.
+Chaque version est testée et peut être activée/désactivée indépendamment.
+Le moteur vérifie spread, horaires, taille minimale/maximale et pas de lot, marge et règles du broker.
+Les symboles sont résolus selon le broker : XAUUSD, XAUUSDm et autres suffixes ne sont pas supposés interchangeables.
+Les stratégies multi-symboles contrôlent aussi l’exposition totale du compte.
+6.1 Interdiction du Martingale
+Aucune hausse automatique de lot après une perte.
+Aucune grille de récupération par augmentation de l’exposition.
+Calcul de volume documenté et limité par la stratégie et le profil de risque.
+Tests spécifiques vérifiant qu’une perte précédente ne provoque pas une hausse automatique du lot.
+Tout changement de stratégie ou de paramètre est versionné et journalisé.
+7. Risques et états
+7.1 Contrôles de risque
+Risque par opération et volume maximal.
+Perte journalière maximale, drawdown, exposition totale et nombre maximal de positions.
+Seuil de spread et de marge ; contrôles d’ordres répétés.
+Arrêt des nouvelles entrées lorsque les limites sont atteintes.
+Contrôles critiques exécutés dans le moteur même si le navigateur est fermé.
+7.2 États d’instance
+État
+Signification
+STOPPED
+Aucune stratégie active.
+STARTING
+Commande reçue ; contrôles en cours.
+RUNNING
+Stratégie active et surveillée.
+STOPPING
+Arrêt en cours.
+ERROR
+Erreur ; nouvelles entrées bloquées.
+RISK_HALTED
+Arrêt automatique après dépassement d’une limite.
+DISCONNECTED
+Terminal ou broker inaccessible ; aucune nouvelle entrée.
+L’arrêt standard bloque les nouvelles entrées et applique une politique explicite aux positions existantes. Fermer toutes les positions est une commande distincte, avec confirmation renforcée.
+8. API proposée
+Préfixe : /api/v1. Toutes les routes privées exigent authentification, autorisation, validation et limitation de débit.
+Méthode et route
+Fonction
+POST /auth/register
+Créer un utilisateur si l’inscription est activée.
+POST /auth/login ; /auth/logout
+Ouvrir ou révoquer une session.
+GET /me
+Profil et permissions de l’utilisateur courant.
+GET /accounts
+Lister uniquement ses comptes MT5.
+POST /accounts
+Créer une référence de compte et transmettre le secret via HTTPS.
+POST /accounts/{id}/test-connection
+Tester la connexion sans renvoyer le secret.
+DELETE /accounts/{id}
+Désassocier un compte inutilisé par une instance.
+GET /strategies
+Lister les stratégies autorisées.
+GET /strategies/{id}/schema
+Paramètres permis et limites.
+GET /instances
+Lister les instances accessibles.
+POST /instances
+Créer une instance avec compte, version, symboles et paramètres.
+POST /instances/{id}/start
+Démarrer via commande idempotente.
+POST /instances/{id}/stop
+Arrêter les nouvelles entrées et la stratégie selon sa politique.
+POST /instances/{id}/emergency-close
+Demander la liquidation d’urgence avec confirmation.
+GET /instances/{id}/status
+Lire l’état confirmé par le moteur.
+GET /accounts/{id}/positions
+Consulter les positions.
+GET /accounts/{id}/history
+Consulter l’historique synchronisé.
+GET /licenses/current
+Lire la licence et ses limites.
+GET /admin/users ; /admin/audit-events
+Administration autorisée.
+POST /admin/licenses ; PATCH /admin/licenses/{id}
+Créer, modifier, suspendre ou renouveler une licence.
+8.1 Backend ↔ VPS
+Le VPS initie de préférence des connexions HTTPS sortantes vers le backend.
+Chaque commande a un ID unique, une expiration, une cible et une clé d’idempotence.
+Le moteur vérifie l’authenticité, la fraîcheur, la licence, le compte, la version et les limites.
+Accusés de réception distincts : reçue, acceptée, démarrée, terminée ou échouée.
+Heartbeats périodiques ; une commande envoyée ne prouve pas que le robot tourne.
+File de commandes persistante ou mécanisme équivalent pour résister aux coupures.
+9. Modèle de données PostgreSQL
+Table
+Champs et règles clés
+users
+id, email unique normalisé, password_hash ou fournisseur d’identité, status, created_at.
+roles / user_roles
+Rôles et permissions ; aucun rôle admin par défaut.
+trading_accounts
+owner_user_id, broker, server, login, secret_reference, devise, environnement, status.
+secret_records
+Référence coffre, ciphertext, nonce, version de clé, date de rotation ; jamais de secret en clair dans les logs.
+strategies
+id, slug, nom, description, status.
+strategy_versions
+version, parameter_schema, supported_symbols, contraintes de risque, digest d’artefact, status.
+licenses
+owner_user_id, status, dates, limites, created_by.
+license_entitlements
+Stratégies/versions permises, nombre de comptes et d’instances.
+instances
+owner_user_id, trading_account_id, strategy_version_id, état, symboles, paramètres, mode, risk_profile_id.
+commands
+instance_id, type, idempotency_key unique, demandeur, payload non secret, status, horodatages.
+risk_profiles
+perte journalière, drawdown, positions, exposition, spread, version de politique.
+positions_snapshots
+compte, symbole, identifiant position, volume, sens, prix, profit, heure observée.
+trade_events
+compte, instance, ticket broker, événement, volume, prix, résultat, timestamp.
+engine_heartbeats
+engine_id, version, état, last_seen_at, métriques non sensibles.
+audit_events
+acteur, action, cible, date, request_id, résultat et métadonnées filtrées.
+payments (optionnel)
+prestataire, référence externe, montant, devise, état ; aucune donnée complète de carte.
+Ajouter clés étrangères, index, contraintes d’unicité, migrations versionnées et requêtes limitées au propriétaire. Row-Level Security peut renforcer l’isolation mais ne remplace pas les contrôles d’autorisation du backend.
+9.1 Ne jamais conserver
+Mots de passe MT5 en clair.
+Mots de passe utilisateur en clair.
+Secrets API dans Git, journaux, erreurs ou réponses JSON.
+Données complètes de carte bancaire.
+10. Sécurité des identifiants MT5
+Recevoir le secret uniquement par HTTPS et désactiver son journalisation.
+Le chiffrer avec un gestionnaire de secrets ou une clé protégée hors de la base ; prévoir rotation et accès minimal.
+Transmettre le secret au moteur par un canal authentifié et limiter les copies en mémoire.
+Ne jamais renvoyer le mot de passe au navigateur ; afficher seulement l’état d’enregistrement.
+Privilégier un mot de passe de trading à permissions limitées si le broker le permet ; ne jamais demander des identifiants de retrait.
+Masquer les secrets dans logs, traces, erreurs et rapports.
+Séparer les clés de chiffrement de PostgreSQL et limiter l’accès du processus moteur.
+Prévoir suppression, révocation, rotation et procédure d’incident.
+11. Licences, isolation et modèle commercial
+Chaque licence appartient à un utilisateur et a un statut : active, suspendue, expirée ou révoquée.
+Les droits limitent stratégies, versions, comptes MT5, instances simultanées et durée.
+Le moteur revérifie les autorisations et bloque les nouvelles entrées si la licence est révoquée ou ne peut plus être validée après une tolérance définie.
+Toutes les données et commandes sont limitées au propriétaire.
+Le paiement peut être ajouté plus tard ; une licence ne s’active qu’après confirmation fiable du prestataire.
+12. Déploiement
+12.1 Vercel
+Connecter le dépôt Git au projet Vercel.
+Configurer développement, préproduction et production.
+Gérer les variables via les paramètres de Vercel, jamais dans le code.
+Exécuter les migrations dans un processus contrôlé.
+Configurer domaine, HTTPS, protections de déploiement et logs.
+Ne pas exécuter de boucle de trading permanente dans une fonction web/serverless.
+12.2 PostgreSQL/Neon
+Créer des bases séparées par environnement.
+Utiliser TLS et des comptes de service aux privilèges minimaux.
+Mettre en place migrations, sauvegardes et tests de restauration.
+Configurer un pool de connexions adapté à l’environnement serverless.
+12.3 Contabo
+Vérifier OS, CPU, RAM, stockage, règles du broker et compatibilité MT5.
+Choisir un environnement compatible avec MetaTrader5 ; utiliser Windows si nécessaire.
+Créer un compte système dédié et limiter les privilèges.
+Installer terminal MT5, Python et dépendances verrouillées.
+Exécuter le moteur comme service supervisé avec redémarrage contrôlé et logs rotatifs.
+Configurer pare-feu, mises à jour, accès distant restreint et surveillance.
+Éviter un port de commande public ; privilégier HTTPS sortant authentifié.
+Tester redémarrage, perte réseau, terminal fermé, broker indisponible et restauration.
+12.4 Ressources
+Dimensionner selon le nombre de terminaux, comptes et stratégies. Mesurer CPU, RAM et latence pendant un test de charge avant d’augmenter le nombre de clients. Ne pas supposer qu’un seul terminal peut gérer tous les comptes sans validation.
+12.5 Variables d’environnement indicatives
+DATABASE_URL
+AUTH_SECRET
+ENGINE_SERVICE_ID
+ENGINE_AUTH_SECRET ou certificat
+SECRET_ENCRYPTION_KEY_REFERENCE
+ALLOWED_ORIGINS
+LOG_LEVEL
+Les valeurs réelles restent dans des gestionnaires de secrets. Aucun mot de passe MT5 ni clé privée ne doit être inscrit dans Git.
+13. Plan de tests et critères d’acceptation
+Phase
+Tests
+Critère d’acceptation
+T1 — Unitaires
+Volumes, arrondis, symboles, paramètres, risques.
+Résultats déterministes ; valeurs hors limites rejetées.
+T2 — Anti-Martingale
+Pertes, gains, redémarrages et changements de paramètres.
+Aucun lot augmenté à cause d’une perte antérieure.
+T3 — Sécurité
+Contrôle d’accès, IDOR, injection, sessions et secrets.
+Aucun accès inter-clients ; aucun secret dans les logs.
+T4 — API/moteur
+Commandes dupliquées/expirées, heartbeat perdu.
+Idempotence, états explicites, aucun démarrage involontaire en double.
+T5 — MT5 démo
+Connexion, ordre, rejet, spread, lots, reconnexion.
+État de l’application conforme à MT5.
+T6 — Résilience
+Redémarrage VPS, crash terminal, coupure réseau/base.
+Pas de nouvelle entrée sans contrôles ; reprise sûre.
+T7 — Risque
+Perte journalière, drawdown, marge, exposition, arrêt d’urgence.
+Nouvelles entrées bloquées au seuil défini.
+T8 — Préproduction
+Plusieurs comptes démo et symboles.
+Isolation correcte et attribution des événements.
+T9 — Réel limité
+Exposition réduite après approbation explicite.
+Checklist signée, surveillance et arrêt vérifiés.
+Les tests historiques et démo ne garantissent pas les résultats futurs. Le passage au réel exige une approbation humaine formelle.
+14. Observabilité et incidents
+Heartbeat du moteur, terminal et broker.
+Alertes pour déconnexion, instance bloquée, rejet d’ordre, seuil de risque ou disque saturé.
+Identifiant de corrélation par requête et commande.
+Logs sans secrets, rétention limitée et accès restreint.
+Runbook : bloquer les nouvelles entrées, vérifier les positions dans MT5, diagnostiquer, redémarrer prudemment et réconcilier l’état.
+Afficher l’heure de la dernière donnée confirmée ; ne pas présenter une donnée périmée comme temps réel.
+15. Phases de réalisation
+Phase
+Livrables
+P0 — Validation technique
+Vérifier OS/Contabo/MT5, broker et prototype de connexion démo.
+P1 — Socle
+Dépôt Git, Next.js, authentification, rôles, schéma PostgreSQL, migrations, CI.
+P2 — Comptes/secrets
+Ajout de compte, chiffrement, test de connexion, isolation client.
+P3 — Moteur
+Service Python, états, heartbeat, commandes et logs.
+P4 — Première stratégie
+Interface de stratégie, paramètres, limites et tests anti-Martingale.
+P5 — Tableau de bord
+Positions, performance, événements, états et start/stop.
+P6 — Licences
+Attribution, expiration, suspension et contrôles moteur/backend.
+P7 — Validation démo
+Tests multi-comptes, charge, sécurité, résilience et restauration.
+P8 — Réel contrôlé
+Revue sécurité, approbation, limites conservatrices et procédure d’urgence.
+16. Conditions de mise en production
+Compatibilité Contabo/OS/MT5 prouvée par un test démo.
+Tests de séparation clients et protection des secrets réussis.
+Limites de risque appliquées et testées dans le moteur.
+Arrêt et procédure de redémarrage documentés.
+Sauvegarde PostgreSQL et restauration testées.
+Logs sans secrets.
+Passage au réel explicitement confirmé par l’utilisateur.
+17. Informations à confirmer
+Système d’exploitation exact et ressources du VPS Contabo.
+Brokers pris en charge au lancement.
+Nombre initial de clients, comptes simultanés et instances.
+Première stratégie et règles d’entrée/sortie précises.
+Limites de risque par défaut et personnes autorisées à les modifier.
+Solution d’authentification et coffre à secrets.
+Paiement et facturation si inclus dans la première version.
+18. Résultat attendu
+La plateforme permet à l’administrateur et aux clients autorisés de gérer leurs comptes MT5 et licences, sélectionner des stratégies, démarrer/arrêter des instances et consulter des états confirmés. Le moteur tourne indépendamment sur Contabo, les secrets sont protégés, les actions sont auditables et le Martingale est exclu par conception.
+Ce document définit une architecture cible, pas une preuve que le système est déjà déployé ni une garantie de rentabilité. La compatibilité MT5 et les conditions du broker doivent être vérifiées avant production.

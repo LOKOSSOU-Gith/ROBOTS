@@ -1,0 +1,76 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: mt5_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U test_user; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+      - name: Generate migrations
+        run: npm run db:generate
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/mt5_test
+          DATABASE_URL_DIRECT: postgres://test_user:test_password@localhost:5432/mt5_test
+
+      - name: Run migrations
+        run: npm run db:migrate
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/mt5_test
+          DATABASE_URL_DIRECT: postgres://test_user:test_password@localhost:5432/mt5_test
+
+      - name: Seed database
+        run: npm run db:seed
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/mt5_test
+          DATABASE_URL_DIRECT: postgres://test_user:test_password@localhost:5432/mt5_test
+          ADMIN_EMAIL: admin@test.com
+          ADMIN_PASSWORD: TestPassword123
+
+      - name: Run integration tests
+        run: npm run test
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/mt5_test
+          DATABASE_URL_DIRECT: postgres://test_user:test_password@localhost:5432/mt5_test
+          AUTH_SECRET: test-secret-for-ci-only-32-chars-min
+          ENCRYPTION_KEY_RING: '{"1":"dGVzdC1rZXktZm9yLWNpLW9ubHktMzItY2hhcnM="}'
+          ENGINE_AUTH_SECRET: test-engine-secret-for-ci-only
+          APP_ENV: test

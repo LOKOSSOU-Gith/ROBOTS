@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mt5-engine"
+version = "0.1.0"
+description = "Moteur d'execution MT5 pour la plateforme SaaS (Contabo)"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+# Le paquet officiel MetaTrader5 ne s'installe que dans un environnement compatible
+# Windows (VM Windows Contabo ou agent dedie). Ne l'ajoutez pas aux dependances
+# de base: un VPS Linux ne peut pas l'utiliser (§4).
+windows = ["MetaTrader5>=5.0.45"]
+dev = ["pytest>=8.0.0", "pytest-timeout>=2.3.0"]
+
+[project.scripts]
+mt5-engine = "mt5_engine.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

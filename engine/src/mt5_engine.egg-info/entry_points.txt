@@ -1,0 +1,2 @@
+[console_scripts]
+mt5-engine = mt5_engine.__main__:main

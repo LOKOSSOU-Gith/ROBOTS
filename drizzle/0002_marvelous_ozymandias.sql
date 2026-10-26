@@ -1,0 +1,1 @@
+ALTER TABLE "instances" ADD COLUMN "new_entries_blocked" boolean DEFAULT false NOT NULL;

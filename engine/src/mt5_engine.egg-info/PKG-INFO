@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: mt5-engine
+Version: 0.1.0
+Summary: Moteur d'execution MT5 pour la plateforme SaaS (Contabo)
+Requires-Python: >=3.10
+Requires-Dist: requests>=2.31.0
+Provides-Extra: windows
+Requires-Dist: MetaTrader5>=5.0.45; extra == "windows"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-timeout>=2.3.0; extra == "dev"
