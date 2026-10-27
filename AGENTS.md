@@ -31,14 +31,30 @@ Ce document définit les conventions et patterns suivis par le projet pour assur
 └──────────────┬──────────────────────────┘
                │ HTTP (engine auth)
 ┌──────────────▼──────────────────────────┐
-│         Moteur Python (Contabo)         │
+│         Moteur Python (Ubuntu)          │
 │  - Stratégies de trading               │
 │  - Gestion des risques                 │
-│  - Communication MT5                   │
+│  - Communication MT5 (via bridge)      │
+└──────────────┬──────────────────────────┘
+               │ HTTP (bridge token)
+┌──────────────▼──────────────────────────┐
+│    MT5 Bridge (Windows ou Wine)        │
+│  - Option 1: Windows Agent             │
+│  - Option 2: mt5-gateway (Docker+Wine)│
 └─────────────────────────────────────────┘
 ```
 
 ### Domain-Driven Design
+
+### Bridges MT5
+
+Le moteur Python supporte trois modes de connexion à MT5:
+
+1. **simulator** - Mode simulation pour les tests
+2. **windows_bridge** - Client HTTP vers un agent Windows dédié
+3. **mt5_gateway** - Client HTTP vers mt5-gateway (MT5 sous Wine/Docker)
+
+Configuration via `TERMINAL_KIND` dans les variables d'environnement.
 
 Le code métier pur vit dans `src/server/domain/`:
 

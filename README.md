@@ -8,11 +8,13 @@ Cette plateforme permet aux utilisateurs de connecter leurs comptes MT5, de choi
 
 ### Architecture
 
-- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS (hébergé sur Vercel)
+- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS (hébergé sur Vercel ou Ubuntu VPS)
 - **Backend**: Next.js API Routes + authentification par session
-- **Base de données**: PostgreSQL (managé via Neon en production, Docker en dev)
-- **Moteur d'exécution**: Python (déployé sur Contabo VPS)
-- **Terminal MT5**: Windows Agent pour la communication avec MetaTrader 5
+- **Base de données**: PostgreSQL (Neon) ou SQLite (local)
+- **Moteur d'exécution**: Python (déployé sur Ubuntu VPS)
+- **Terminal MT5**: Deux options:
+  - **Windows Agent** (VPS Windows) - Communication avec agent dédié
+  - **mt5-gateway** (Docker + Wine) - MT5 sous Wine sur Ubuntu
 
 ### Caractéristiques principales
 
@@ -197,7 +199,34 @@ Le moteur Python communique avec le backend via HTTPS:
 
 ## 🚢 Déploiement
 
-L'application est divisée en deux parties à déployer séparément:
+L'application supporte deux architectures de déploiement:
+
+### Option 1: Vercel + Neon + Windows Agent (originale)
+
+Voir [DEPLOYMENT.md](./DEPLOYMENT.md) pour les instructions complètes.
+
+### Option 2: Ubuntu VPS + SQLite + mt5-gateway (nouveau)
+
+Cette option permet de tout déployer sur un seul VPS Ubuntu:
+
+- **Frontend + Backend**: Next.js sur Ubuntu (pm2)
+- **Base de données**: SQLite local
+- **Moteur Python**: Service systemd sur Ubuntu
+- **MT5**: mt5-gateway (Docker + Wine)
+
+**Déploiement automatisé:**
+
+Pour un nouveau VPS (installe tout):
+```bash
+sudo bash deploy-ubuntu.sh
+```
+
+Pour un VPS existant (Docker/Node/Python déjà installés):
+```bash
+bash deploy-ubuntu-existing.sh
+```
+
+Voir [DEPLOYMENT_UBUNTU.md](./DEPLOYMENT_UBUNTU.md) pour les instructions manuelles et [DEPLOYMENT_SCRIPTS.md](./DEPLOYMENT_SCRIPTS.md) pour la documentation des scripts.
 
 ### Frontend + Backend (Vercel)
 

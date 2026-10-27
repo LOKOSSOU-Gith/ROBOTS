@@ -49,6 +49,7 @@ def self_check() -> int:
 
     Réponses attendues :
       - Linux + windows_bridge : correct si l'agent MT5 est joignable ;
+      - Linux + mt5_gateway : correct si mt5-gateway est joignable ;
       - Linux + MetaTrader5 importable : impossible, ne pas le tenter ;
       - Windows + MetaTrader5 : le pont agent local est applicable.
     """
@@ -74,7 +75,7 @@ def self_check() -> int:
     if os_name != "Windows":
         print(
             "paquet MetaTrader5 utilisable nativement: non (OS non Windows) — "
-            "le pont agent est obligatoire, le paquet n'est pas tente ici"
+            "le pont agent ou mt5-gateway est obligatoire"
         )
     elif package_available:
         print("paquet MetaTrader5 utilisable nativement: oui")
@@ -91,6 +92,18 @@ def self_check() -> int:
         print(f"pont agent joignable: {reachable}")
         if os_name != "Windows" and not reachable:
             print("P0 NON SATISFAIT: aucun exécutant MT5 disponible")
+            return 3
+
+    elif config.terminal_kind == "mt5_gateway":
+        bridge = build_bridge(config)
+        reachable = False
+        try:
+            reachable = bridge.ping()
+        except Exception as exc:
+            print(f"mt5-gateway injoignable: {type(exc).__name__}")
+        print(f"mt5-gateway joignable: {reachable}")
+        if not reachable:
+            print("P0 NON SATISFAIT: mt5-gateway non disponible")
             return 3
     else:
         print("executant: simulateur (validation fonctionnelle, jamais du reel)")

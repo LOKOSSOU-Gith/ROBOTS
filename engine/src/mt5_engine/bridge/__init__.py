@@ -2,11 +2,12 @@
 
 La bibliothèque officielle `MetaTrader5` ne pilote un terminal que dans un
 environnement Windows compatible. Le moteur tourne sur le VPS Linux Contabo :
-il ne l'importe donc jamais directement. Deux implémentations existent :
+il ne l'importe donc jamais directement. Trois implémentations existent :
 
  - `simulator.py`        : comportement déterministe, utilisé par P0 et T1-T8 ;
  - `windows_agent_client.py` : client HTTPS vers l'agent Windows qui, lui,
-   héberge le terminal et le paquet `MetaTrader5`.
+   héberge le terminal et le paquet `MetaTrader5` ;
+ - `mt5_gateway_client.py` : client HTTP vers mt5-gateway (MT5 sous Wine/Docker).
 
 Le point d'entrée unique (`TerminalBridge`) garantit qu'aucune stratégie ne
 peut choisir elle-même son exécutant.
@@ -20,6 +21,8 @@ from .base import (
     TerminalBridge,
 )
 from .simulator import SimulatorBridge
+from .windows_agent_client import WindowsAgentBridge
+from .mt5_gateway_client import Mt5GatewayBridge
 
 __all__ = [
     "BridgeUnavailable",
@@ -28,4 +31,6 @@ __all__ = [
     "OrderResult",
     "SimulatorBridge",
     "TerminalBridge",
+    "WindowsAgentBridge",
+    "Mt5GatewayBridge",
 ]

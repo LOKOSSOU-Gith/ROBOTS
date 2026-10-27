@@ -41,11 +41,13 @@ class EngineConfig:
     engine_id: str
     auth_secret: str = field(repr=False)
 
-    # windows_bridge | simulator (§4).
+    # windows_bridge | mt5_gateway | simulator (§4).
     terminal_kind: str = "simulator"
     # Agent Windows : URL du service de pont, uniquement en https ou loopback.
     bridge_url: str = ""
     bridge_token: str = field(default="", repr=False)
+    # mt5-gateway : API key pour l'authentification
+    gateway_api_key: str = field(default="", repr=False)
 
     heartbeat_interval_seconds: int = 15
     poll_interval_seconds: int = 2
@@ -82,11 +84,13 @@ class EngineConfig:
             raise ConfigError("BACKEND_URL doit être en https://")
 
         terminal_kind = os.environ.get("TERMINAL_KIND", "simulator").strip().lower()
-        if terminal_kind not in {"simulator", "windows_bridge"}:
-            raise ConfigError("TERMINAL_KIND: simulator ou windows_bridge")
+        if terminal_kind not in {"simulator", "windows_bridge", "mt5_gateway"}:
+            raise ConfigError("TERMINAL_KIND: simulator, windows_bridge ou mt5_gateway")
 
         bridge_url = os.environ.get("MT5_BRIDGE_URL", "").strip().rstrip("/")
         bridge_token = os.environ.get("MT5_BRIDGE_TOKEN", "")
+        gateway_api_key = os.environ.get("MT5_GATEWAY_API_KEY", "")
+
         if terminal_kind == "windows_bridge":
             if not bridge_url:
                 raise ConfigError("MT5_BRIDGE_URL requis avec TERMINAL_KIND=windows_bridge")
@@ -101,6 +105,12 @@ class EngineConfig:
             if not bridge_token or len(bridge_token) < 16:
                 raise ConfigError("MT5_BRIDGE_TOKEN manquant ou trop court")
 
+        if terminal_kind == "mt5_gateway":
+            if not bridge_url:
+                raise ConfigError("MT5_BRIDGE_URL requis avec TERMINAL_KIND=mt5_gateway")
+            if not gateway_api_key or len(gateway_api_key) < 16:
+                raise ConfigError("MT5_GATEWAY_API_KEY manquant ou trop court")
+
         return cls(
             backend_url=backend_url,
             engine_id=engine_id,
@@ -108,6 +118,7 @@ class EngineConfig:
             terminal_kind=terminal_kind,
             bridge_url=bridge_url,
             bridge_token=bridge_token,
+            gateway_api_key=gateway_api_key,
             heartbeat_interval_seconds=_int("ENGINE_HEARTBEAT_SECONDS", 15),
             poll_interval_seconds=_int("ENGINE_POLL_SECONDS", 2),
             scan_interval_seconds=_int("ENGINE_SCAN_SECONDS", 5),

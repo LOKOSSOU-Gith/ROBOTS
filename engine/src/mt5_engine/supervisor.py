@@ -727,13 +727,21 @@ def digest_of(parameters: dict) -> str:
 def build_bridge(config: EngineConfig) -> TerminalBridge:
     """Choix de l'exécutant selon l'environnement réel (§4).
 
-    Un VPS Linux ne peut pas importer le paquet MetaTrader5 : le pont Windows
-    agent ou le simulateur sont les deux seules options.
+    Un VPS Linux ne peut pas importer le paquet MetaTrader5 : trois options :
+    - windows_bridge : agent Windows dédié
+    - mt5_gateway : mt5-gateway (MT5 sous Wine/Docker)
+    - simulator : pour les tests
     """
     if config.terminal_kind == "windows_bridge":
         from .bridge.windows_agent_client import WindowsAgentBridge
 
         return WindowsAgentBridge(config.bridge_url, config.bridge_token, config.request_timeout_seconds)
+
+    if config.terminal_kind == "mt5_gateway":
+        from .bridge.mt5_gateway_client import Mt5GatewayBridge
+
+        return Mt5GatewayBridge(config.bridge_url, config.gateway_api_key, config.request_timeout_seconds)
+
     from .bridge.simulator import SimulatorBridge
 
     return SimulatorBridge()
