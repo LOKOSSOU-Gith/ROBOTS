@@ -36,7 +36,7 @@ Le repository est divisé en deux parties déployées séparément:
 
 1. **Vercel** - Frontend + Backend Next.js
    - Racine du repository (exclut `engine/` et `windows_agent/`)
-   - Configuration: `vercel.json`
+   - Configuration: détection automatique Next.js (aucun `vercel.json` requis)
    - Exclusions: `.vercelignore`
 
 2. **Contabo** - Moteur Python + Windows Agent
@@ -70,9 +70,11 @@ Le repository est divisé en deux parties déployées séparément:
 
 ### 1.2 Configurer les variables d'environnement
 
-Dans le dashboard Neon, récupérez:
-- Connection string (poolée)
-- Connection string directe (pour migrations)
+Dans le dashboard Neon, récupérez **deux** chaînes distinctes (bouton "Connect" → onglet "Connection pooling") :
+- la chaîne **pooled** (le host contient `-pooler`) → `DATABASE_URL`
+- la chaîne **directe** (sans `-pooler`) → `DATABASE_URL_DIRECT`, utilisée uniquement pour les migrations
+
+Le système de fichiers de Vercel est éphémère : une base SQLite (`file:./db.sqlite`) ne peut pas y fonctionner, PostgreSQL est obligatoire.
 
 Exemple:
 ```
@@ -130,7 +132,7 @@ Ajoutez ces variables dans les settings Vercel:
 |----------|-------------|--------|
 | `DATABASE_URL` | Connection Neon poolée | `postgres://...` |
 | `DATABASE_URL_DIRECT` | Connection Neon directe | `postgres://...` |
-| `DATABASE_POOL_MAX` | Taille du pool | `5` |
+| `DATABASE_POOL_MAX` | Connexions par instance serverless | `1` |
 | `AUTH_SECRET` | Secret sessions | `openssl rand -base64 48` |
 | `SESSION_COOKIE_NAME` | Nom du cookie | `mt5_session` |
 | `SESSION_TTL_SECONDS` | Durée session | `86400` |

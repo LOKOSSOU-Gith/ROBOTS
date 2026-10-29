@@ -29,7 +29,17 @@ function connectionString(): string {
   return url;
 }
 
-export function createDatabase(url = connectionString(), maxConnections = 5): Database {
+/**
+ * Un déploiement serverless (Vercel) multiplie les instances : chaque instance
+ * doit ouvrir le moins de connexions possible, sinon le pooler saturera.
+ */
+function defaultPoolSize(): number {
+  const configured = Number.parseInt(process.env.DATABASE_POOL_MAX ?? "", 10);
+  if (Number.isFinite(configured) && configured > 0) return configured;
+  return process.env.VERCEL ? 1 : 5;
+}
+
+export function createDatabase(url = connectionString(), maxConnections = defaultPoolSize()): Database {
   const sql = postgres(url, {
     max: maxConnections,
     idle_timeout: 20,
