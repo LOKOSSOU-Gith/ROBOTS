@@ -20,11 +20,12 @@ docker-compose.yml
 # CI/CD (GitHub uniquement)
 .github/
 
-# Scripts de développement
-scripts/
-
 # Migrations Drizzle (exécutées manuellement en prod)
 drizzle/
+
+# NB : scripts/ ne doit PAS être ignoré. `src/server/db/migrate.ts` importe
+# `scripts/load-env`, et le typecheck de `next build` échoue si le fichier est
+# absent de l'upload Vercel.
 
 # Environment local
 .env
