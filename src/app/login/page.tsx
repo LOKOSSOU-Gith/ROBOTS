@@ -6,6 +6,9 @@ import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Connexion — MT5 Control" };
 
+// La page lit la configuration serveur : jamais de rendu statique au build.
+export const dynamic = "force-dynamic";
+
 export default async function LoginPage({
   searchParams,
 }: {
